@@ -38,19 +38,28 @@ def get_one_book(book_id: int):
 
 @app.put("/books/{book_id}")
 def update_book(book_id: int, book: Book):
-    # Loop through all books
+    
     for index, existing_book in enumerate(books):
-        # If we find the book with matching ID
         if existing_book["id"] == book_id:
-            # Update it
+            
             books[index] = {
                 "id": book_id,
                 "title": book.title,
                 "author": book.author,
                 "year": book.year
             }
-            # Return the updated book
+
             return books[index]
     
-    # If we finish the loop and never found the book
+    raise HTTPException(status_code=404, detail=f"Book with id {book_id} not found")
+
+
+@app.delete("/books/{book_id}")
+def delete_book(book_id: int):
+    
+    for index, existing_book in enumerate(books):
+        if existing_book["id"] == book_id:
+            books.pop(index)
+            return {"message": f"Book {book_id} deleted successfully"}
+    
     raise HTTPException(status_code=404, detail=f"Book with id {book_id} not found")
