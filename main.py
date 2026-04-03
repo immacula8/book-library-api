@@ -3,6 +3,7 @@
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 from typing import List
+from fastapi.staticfiles import StaticFiles
 
 # Import our modules
 from database import get_db, engine
@@ -14,6 +15,7 @@ Base.metadata.create_all(bind=engine)
 
 # Create FastAPI app
 app = FastAPI(title="Book Library API", version="2.0.0")
+app.mount("/static", StaticFiles(directory="static", html=True), name="static")
 
 # ==================== WELCOME ENDPOINT ====================
 @app.get("/")
