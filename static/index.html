@@ -28,7 +28,6 @@
             text-align: center;
         }
         
-        /* Form Styles */
         .form-container {
             background: white;
             padding: 20px;
@@ -80,7 +79,6 @@
             background: #c82333;
         }
         
-        /* Table Styles */
         table {
             width: 100%;
             background: white;
@@ -133,6 +131,16 @@
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
+        
+        .stats {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 18px;
+            color: #555;
+        }
     </style>
 </head>
 <body>
@@ -141,14 +149,16 @@
         
         <div id="message" class="message"></div>
         
-        <!-- Search Box -->
+        <div class="stats" id="stats">
+            Loading book count...
+        </div>
+        
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="Search by title or author...">
             <button onclick="searchBooks()">🔍 Search</button>
             <button onclick="loadBooks()">Show All</button>
         </div>
         
-        <!-- Add Book Form -->
         <div class="form-container">
             <h3>Add New Book</h3>
             <div class="form-group">
@@ -166,7 +176,6 @@
             <button onclick="createBook()">Add Book</button>
         </div>
         
-        <!-- Books Table -->
         <table id="booksTable">
             <thead>
                 <tr>
@@ -186,7 +195,6 @@
     </div>
     
     <script>
-        // API base URL
         const API_URL = 'http://localhost:8000';
         
         // Load books when page loads
@@ -206,38 +214,59 @@
             try {
                 const response = await fetch(`${API_URL}/books`);
                 const books = await response.json();
-                displayBooks(data.books);
+                displayBooks(books);
+                updateStats(books.length);
             } catch (error) {
+                console.error('Error:', error);
                 showMessage('Error loading books: ' + error.message, 'error');
+                document.getElementById('booksBody').innerHTML = '<tr><td colspan="5" style="text-align: center;">Failed to load books. Make sure the server is running.</td></tr>';
+            }
+        }
+        
+        function updateStats(count) {
+            const statsDiv = document.getElementById('stats');
+            if (count === 1) {
+                statsDiv.innerHTML = `📖 Total books: ${count} book in your library`;
+            } else {
+                statsDiv.innerHTML = `📖 Total books: ${count} books in your library`;
             }
         }
         
         async function searchBooks() {
-            const searchTerm = document.getElementById('searchInput').value;
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            
             if (!searchTerm) {
                 loadBooks();
                 return;
             }
             
             try {
-                const response = await fetch(`${API_URL}/books/search?title=${encodeURIComponent(searchTerm)}`);
+                // Try searching by title first
+                let response = await fetch(`${API_URL}/books/search?title=${encodeURIComponent(searchTerm)}`);
                 let books = await response.json();
-        
+                
+                // If no results, try searching by author
                 if (books.length === 0) {
-                    // Try searching by author
-                    const authorResponse = await fetch(`${API_URL}/books/search?author=${encodeURIComponent(searchTerm)}`);
-                    books = await authorResponse.json();
+                    response = await fetch(`${API_URL}/books/search?author=${encodeURIComponent(searchTerm)}`);
+                    books = await response.json();
                 }
                 
                 displayBooks(books);
+                
+                if (books.length === 0) {
+                    showMessage(`No books found matching "${searchTerm}"`, 'error');
+                } else {
+                    showMessage(`Found ${books.length} book(s) matching "${searchTerm}"`, 'success');
+                }
             } catch (error) {
+                console.error('Error:', error);
                 showMessage('Error searching: ' + error.message, 'error');
             }
         }
         
         async function createBook() {
-            const title = document.getElementById('title').value;
-            const author = document.getElementById('author').value;
+            const title = document.getElementById('title').value.trim();
+            const author = document.getElementById('author').value.trim();
             const year = document.getElementById('year').value;
             
             if (!title || !author || !year) {
@@ -267,9 +296,11 @@
                     document.getElementById('year').value = '';
                     loadBooks();
                 } else {
-                    showMessage('Error adding book', 'error');
+                    const error = await response.json();
+                    showMessage(error.detail || 'Error adding book', 'error');
                 }
             } catch (error) {
+                console.error('Error:', error);
                 showMessage('Error: ' + error.message, 'error');
             }
         }
@@ -291,6 +322,7 @@
                     showMessage('Error deleting book', 'error');
                 }
             } catch (error) {
+                console.error('Error:', error);
                 showMessage('Error: ' + error.message, 'error');
             }
         }
