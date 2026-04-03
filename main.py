@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 from typing import List
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.exc import IntegrityError
 
 # Import our modules
 from database import get_db, engine
@@ -74,19 +75,41 @@ def get_one_book(book_id: int, db: Session = Depends(get_db)):
 # ==================== CREATE BOOK ====================
 @app.post("/books", response_model=Book)
 def create_book(book: BookCreate, db: Session = Depends(get_db)):
-    """Create a new book"""
+    """Create a new book (prevents duplicates)"""
+    
+    # First, check if this exact book already exists
+    existing_book = db.query(BookDB).filter(
+        BookDB.title == book.title,
+        BookDB.author == book.author,
+        BookDB.year == book.year
+    ).first()
+    
+    # If it exists, return a friendly error message
+    if existing_book:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Book '{book.title}' by {book.author} ({book.year}) already exists in the library!"
+        )
+    
+    # If it doesn't exist, create the new book
     db_book = BookDB(
         title=book.title,
         author=book.author,
         year=book.year
     )
     
-    db.add(db_book)
-    db.commit()
-    db.refresh(db_book)  # Gets the auto-generated ID
-    
-    return db_book
-
+    try:
+        db.add(db_book)
+        db.commit()
+        db.refresh(db_book)
+        return db_book
+    except IntegrityError:
+        # This is a backup check in case the database constraint catches something
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail=f"Book '{book.title}' by {book.author} ({book.year}) already exists!"
+        )
 # ==================== UPDATE BOOK ====================
 @app.put("/books/{book_id}", response_model=Book)
 def update_book(book_id: int, book: BookCreate, db: Session = Depends(get_db)):

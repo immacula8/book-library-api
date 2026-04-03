@@ -1,14 +1,16 @@
-# models.py - Defines the database table structure
-
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, UniqueConstraint
 from database import Base
 
-# Define the Book table structure
 class BookDB(Base):
-    __tablename__ = "books"  # Name of the table in database
+    __tablename__ = "books"
     
-    # Define columns (fields) in the table
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, nullable=False)   # nullable=False = required field
-    author = Column(String, nullable=False)  # nullable=False = required field
-    year = Column(Integer, nullable=False)   # nullable=False = required field
+    title = Column(String, nullable=False)
+    author = Column(String, nullable=False)
+    year = Column(Integer, nullable=False)
+    
+    # This creates a UNIQUE constraint on the combination of title, author, and year
+    # This means you cannot have two books with the same title, author, AND year
+    __table_args__ = (
+        UniqueConstraint('title', 'author', 'year', name='unique_book'),
+    )
