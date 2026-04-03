@@ -1,4 +1,4 @@
-# models.py - Defines what a book looks like in the database
+# models.py - Defines the database table structure
 
 from sqlalchemy import Column, Integer, String
 from database import Base
@@ -9,6 +9,6 @@ class BookDB(Base):
     
     # Define columns (fields) in the table
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, nullable=False)
-    author = Column(String, nullable=False)
-    year = Column(Integer, nullable=False)
+    title = Column(String, nullable=False)   # nullable=False = required field
+    author = Column(String, nullable=False)  # nullable=False = required field
+    year = Column(Integer, nullable=False)   # nullable=False = required field

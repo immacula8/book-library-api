@@ -1,5 +1,6 @@
+# main.py - Complete Book Library API
+
 from fastapi import FastAPI, HTTPException, Depends
-from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -54,14 +55,10 @@ def search_books(
     if author:
         query = query.filter(BookDB.author.ilike(f"%{author}%"))
     
-    # Get the results
-    results = query.all()
-    
-    # Return the results
-    return results
+    # Get and return the results
+    return query.all()
 
 # ==================== GET ONE BOOK ====================
-# This MUST come AFTER /books/search
 @app.get("/books/{book_id}", response_model=Book)
 def get_one_book(book_id: int, db: Session = Depends(get_db)):
     """Get a specific book by ID"""
@@ -84,7 +81,7 @@ def create_book(book: BookCreate, db: Session = Depends(get_db)):
     
     db.add(db_book)
     db.commit()
-    db.refresh(db_book)
+    db.refresh(db_book)  # Gets the auto-generated ID
     
     return db_book
 
@@ -92,15 +89,18 @@ def create_book(book: BookCreate, db: Session = Depends(get_db)):
 @app.put("/books/{book_id}", response_model=Book)
 def update_book(book_id: int, book: BookCreate, db: Session = Depends(get_db)):
     """Update an existing book"""
+    # Find the book
     db_book = db.query(BookDB).filter(BookDB.id == book_id).first()
     
     if db_book is None:
         raise HTTPException(status_code=404, detail=f"Book with id {book_id} not found")
     
+    # Update the fields
     db_book.title = book.title
     db_book.author = book.author
     db_book.year = book.year
     
+    # Save changes
     db.commit()
     db.refresh(db_book)
     
@@ -110,11 +110,13 @@ def update_book(book_id: int, book: BookCreate, db: Session = Depends(get_db)):
 @app.delete("/books/{book_id}")
 def delete_book(book_id: int, db: Session = Depends(get_db)):
     """Delete a book"""
+    # Find the book
     db_book = db.query(BookDB).filter(BookDB.id == book_id).first()
     
     if db_book is None:
         raise HTTPException(status_code=404, detail=f"Book with id {book_id} not found")
     
+    # Delete it
     db.delete(db_book)
     db.commit()
     

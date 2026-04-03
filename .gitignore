@@ -2,13 +2,32 @@
 __pycache__/
 *.pyc
 *.pyo
-.env
+*.pyd
+.Python
+*.so
+
+# Virtual Environment
 venv/
 env/
+ENV/
+.venv
 
-# IDE
+# Database files (VERY IMPORTANT)
+*.db
+*.sqlite
+*.sqlite3
+books.db
+
+# IDE files
 .vscode/
 .idea/
+*.swp
+*.swo
 
-# OS
+# OS files
 .DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
