@@ -1,6 +1,5 @@
-# main.py - Complete API with SQLite database
-
 from fastapi import FastAPI, HTTPException, Depends
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -15,19 +14,54 @@ Base.metadata.create_all(bind=engine)
 # Create FastAPI app
 app = FastAPI(title="Book Library API", version="2.0.0")
 
-# Welcome endpoint
+# ==================== WELCOME ENDPOINT ====================
 @app.get("/")
 def read_root():
+    """Welcome message"""
     return {"message": "Welcome to the Book Library API!"}
 
-# Get all books
+# ==================== GET ALL BOOKS ====================
 @app.get("/books", response_model=List[Book])
 def get_books(db: Session = Depends(get_db)):
     """Get all books from database"""
     books = db.query(BookDB).all()
     return books
 
-# Get one book by ID
+# ==================== SEARCH BOOKS ====================
+# IMPORTANT: This MUST come BEFORE /books/{book_id}
+@app.get("/books/search", response_model=List[Book])
+def search_books(
+    title: str = None,
+    author: str = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Search for books by title or author.
+    
+    Examples:
+    - /books/search?title=great
+    - /books/search?author=orwell
+    - /books/search?title=great&author=fitzgerald
+    """
+    # Start with all books
+    query = db.query(BookDB)
+    
+    # If user wants to search by title
+    if title:
+        query = query.filter(BookDB.title.ilike(f"%{title}%"))
+    
+    # If user wants to search by author
+    if author:
+        query = query.filter(BookDB.author.ilike(f"%{author}%"))
+    
+    # Get the results
+    results = query.all()
+    
+    # Return the results
+    return results
+
+# ==================== GET ONE BOOK ====================
+# This MUST come AFTER /books/search
 @app.get("/books/{book_id}", response_model=Book)
 def get_one_book(book_id: int, db: Session = Depends(get_db)):
     """Get a specific book by ID"""
@@ -38,56 +72,49 @@ def get_one_book(book_id: int, db: Session = Depends(get_db)):
     
     return book
 
-# Create a new book
+# ==================== CREATE BOOK ====================
 @app.post("/books", response_model=Book)
 def create_book(book: BookCreate, db: Session = Depends(get_db)):
     """Create a new book"""
-    # Create new database book
     db_book = BookDB(
         title=book.title,
         author=book.author,
         year=book.year
     )
     
-    # Add to database and save
     db.add(db_book)
-    db.commit()
-    db.refresh(db_book)  # Get the auto-generated ID
-    
-    return db_book
-
-# Update a book
-@app.put("/books/{book_id}", response_model=Book)
-def update_book(book_id: int, book: BookCreate, db: Session = Depends(get_db)):
-    """Update an existing book"""
-    # Find the book in database
-    db_book = db.query(BookDB).filter(BookDB.id == book_id).first()
-    
-    if db_book is None:
-        raise HTTPException(status_code=404, detail=f"Book with id {book_id} not found")
-    
-    # Update the book fields
-    db_book.title = book.title
-    db_book.author = book.author
-    db_book.year = book.year
-    
-    # Save to database
     db.commit()
     db.refresh(db_book)
     
     return db_book
 
-# Delete a book
-@app.delete("/books/{book_id}")
-def delete_book(book_id: int, db: Session = Depends(get_db)):
-    """Delete a book"""
-    # Find the book in database
+# ==================== UPDATE BOOK ====================
+@app.put("/books/{book_id}", response_model=Book)
+def update_book(book_id: int, book: BookCreate, db: Session = Depends(get_db)):
+    """Update an existing book"""
     db_book = db.query(BookDB).filter(BookDB.id == book_id).first()
     
     if db_book is None:
         raise HTTPException(status_code=404, detail=f"Book with id {book_id} not found")
     
-    # Delete from database
+    db_book.title = book.title
+    db_book.author = book.author
+    db_book.year = book.year
+    
+    db.commit()
+    db.refresh(db_book)
+    
+    return db_book
+
+# ==================== DELETE BOOK ====================
+@app.delete("/books/{book_id}")
+def delete_book(book_id: int, db: Session = Depends(get_db)):
+    """Delete a book"""
+    db_book = db.query(BookDB).filter(BookDB.id == book_id).first()
+    
+    if db_book is None:
+        raise HTTPException(status_code=404, detail=f"Book with id {book_id} not found")
+    
     db.delete(db_book)
     db.commit()
     
