@@ -9,8 +9,7 @@ class BookDB(Base):
     author = Column(String, nullable=False)
     year = Column(Integer, nullable=False)
     
-    # This creates a UNIQUE constraint on the combination of title, author, and year
-    # This means you cannot have two books with the same title, author, AND year
+    # Prevents duplicate books (same title, author, and year)
     __table_args__ = (
         UniqueConstraint('title', 'author', 'year', name='unique_book'),
     )
