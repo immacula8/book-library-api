@@ -16,28 +16,31 @@ Base.metadata.create_all(bind=engine)
 # Create FastAPI app
 app = FastAPI(title="Book Library API", version="2.0.0")
 
-# Mount static files (CSS, JS, HTML)
+# Mount static files (CSS, JS, HTML assets if any)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# ==================== WELCOME & HTML ENDPOINT ====================
+# ==================== ROOT ENDPOINT - SERVES HTML INTERFACE ====================
 @app.get("/", response_class=HTMLResponse)
 def read_root():
     """Serve the book library web interface"""
+    html_path = os.path.join("static", "index.html")
     try:
-        with open("static/index.html", "r", encoding="utf-8") as f:
+        with open(html_path, "r", encoding="utf-8") as f:
             html_content = f.read()
         return HTMLResponse(content=html_content)
     except FileNotFoundError:
-        return HTMLResponse(content="<h1>Book Library API</h1><p>Static files not found. Visit /docs for API documentation.</p>")
+        return HTMLResponse(content="<h1>Book Library API</h1><p>Static files not found. Visit <a href='/docs'>/docs</a> for API documentation.</p>")
 
-# ==================== GET ALL BOOKS ====================
+# ==================== API ENDPOINTS ====================
+
+# Get all books
 @app.get("/books", response_model=List[Book])
 def get_books(db: Session = Depends(get_db)):
     """Get all books from database"""
     books = db.query(BookDB).all()
     return books
 
-# ==================== SEARCH BOOKS ====================
+# Search books
 @app.get("/books/search", response_model=List[Book])
 def search_books(
     title: str = None,
@@ -55,7 +58,7 @@ def search_books(
     
     return query.all()
 
-# ==================== GET ONE BOOK ====================
+# Get one book
 @app.get("/books/{book_id}", response_model=Book)
 def get_one_book(book_id: int, db: Session = Depends(get_db)):
     """Get a specific book by ID"""
@@ -66,7 +69,7 @@ def get_one_book(book_id: int, db: Session = Depends(get_db)):
     
     return book
 
-# ==================== CREATE BOOK ====================
+# Create a book
 @app.post("/books", response_model=Book)
 def create_book(book: BookCreate, db: Session = Depends(get_db)):
     """Create a new book (prevents duplicates)"""
@@ -96,7 +99,7 @@ def create_book(book: BookCreate, db: Session = Depends(get_db)):
     
     return db_book
 
-# ==================== UPDATE BOOK ====================
+# Update a book
 @app.put("/books/{book_id}", response_model=Book)
 def update_book(book_id: int, book: BookCreate, db: Session = Depends(get_db)):
     """Update an existing book"""
@@ -114,7 +117,7 @@ def update_book(book_id: int, book: BookCreate, db: Session = Depends(get_db)):
     
     return db_book
 
-# ==================== DELETE BOOK ====================
+# Delete a book
 @app.delete("/books/{book_id}")
 def delete_book(book_id: int, db: Session = Depends(get_db)):
     """Delete a book"""
