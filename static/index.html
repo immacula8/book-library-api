@@ -196,7 +196,7 @@
     
     <script>
         // Use relative path - works on both localhost and Render
-        const API_URL = '';
+        const API_URL = window.location.origin;
         
         // Load books when page loads
         loadBooks();
@@ -213,7 +213,7 @@
         
         async function loadBooks() {
             try {
-                const response = await fetch(`/books`);
+                const response = await fetch(`${API_URL}/books`);
                 const books = await response.json();
                 displayBooks(books);
                 updateStats(books.length);
@@ -242,11 +242,11 @@
             }
             
             try {
-                let response = await fetch(`/books/search?title=${encodeURIComponent(searchTerm)}`);
+                let response = await fetch(`${API_URL}/books/search?title=${encodeURIComponent(searchTerm)}`);
                 let books = await response.json();
                 
                 if (books.length === 0) {
-                    response = await fetch(`/books/search?author=${encodeURIComponent(searchTerm)}`);
+                    response = await fetch(`${API_URL}/books/search?author=${encodeURIComponent(searchTerm)}`);
                     books = await response.json();
                 }
                 
@@ -280,7 +280,7 @@
             };
             
             try {
-                const response = await fetch(`/books`, {
+                const response = await fetch(`${API_URL}/books`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -310,7 +310,7 @@
             }
             
             try {
-                const response = await fetch(`/books/${id}`, {
+                const response = await fetch(`${API_URL}/books/${id}`, {
                     method: 'DELETE'
                 });
                 
